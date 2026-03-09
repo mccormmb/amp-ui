@@ -58,7 +58,8 @@
 </div>
 
 <script>
-const API = (window.AMP_API_BASE || "http://localhost:8080");
+const API = "https://ampv1-api.ashyrock-a009450c.centralus.azurecontainerapps.io/";
+  
 
 async function loadActivities(){
   const r = await fetch(API + "/visibility/activities");
