@@ -1,0 +1,102 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Amp UI (Proof)</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; }
+    header { padding: 12px 16px; border-bottom: 1px solid #ddd; }
+    .banner { background: #fff3cd; padding: 8px 16px; border-bottom: 1px solid #f0e6b6; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 12px; }
+    .card { border: 1px solid #ddd; padding: 12px; border-radius: 8px; }
+    pre { white-space: pre-wrap; word-break: break-word; }
+    button { padding: 8px 10px; }
+    textarea { width: 100%; height: 80px; }
+    input { width: 100%; }
+  </style>
+</head>
+<body>
+<header>
+  <strong>Amp Presentation Plane (Proof)</strong> — STAGING
+</header>
+<div class="banner">
+  <strong>Interpretation Surface — Not an Authorizer.</strong> All writes are packet-mediated.
+</div>
+
+<div class="grid">
+  <div class="card">
+    <h3>Activity Ledger</h3>
+    <button onclick="loadActivities()">Refresh</button>
+    <pre id="activities"></pre>
+  </div>
+  <div class="card">
+    <h3>Packet Studio (Draft)</h3>
+    <label>Packet ID</label><input id="pid" value="pkt-001"/>
+    <label>Packet Type</label><input id="ptype" value="PACKET_ONBOARDING"/>
+    <label>Archetype</label><input id="parch" value="WORKLOAD_ONBOARDING"/>
+    <label>Body (JSON)</label><textarea id="pbody">{}</textarea>
+    <button onclick="draftPacket()">Draft</button>
+    <button onclick="submitPacket()">Submit</button>
+    <pre id="packet_out"></pre>
+  </div>
+  <div class="card">
+    <h3>Chat (Interpretation Surface)</h3>
+    <textarea id="chat_in">Explain what I should do next.</textarea>
+    <button onclick="chat()">Ask</button>
+    <pre id="chat_out"></pre>
+  </div>
+  <div class="card">
+    <h3>Append Event (Visibility)</h3>
+    <label>Activity ID</label><input id="aid" value="act-001"/>
+    <label>Event Type</label><input id="etype" value="ACTIVITY_CREATED"/>
+    <label>Message</label><input id="emsg" value="Activity created"/>
+    <button onclick="createActivity()">Create Activity</button>
+    <button onclick="appendEvent()">Append Event</button>
+    <pre id="event_out"></pre>
+  </div>
+</div>
+
+<script>
+const API = (window.AMP_API_BASE || "http://localhost:8080");
+
+async function loadActivities(){
+  const r = await fetch(API + "/visibility/activities");
+  document.getElementById("activities").textContent = JSON.stringify(await r.json(), null, 2);
+}
+async function draftPacket(){
+  const pid = document.getElementById("pid").value;
+  const ptype = document.getElementById("ptype").value;
+  const arch = document.getElementById("parch").value;
+  const body = JSON.parse(document.getElementById("pbody").value || "{}");
+  const payload = {packet_id: pid, packet_type: ptype, archetype: arch, body: body};
+  const r = await fetch(API + "/packets/draft",{method:"POST",headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  document.getElementById("packet_out").textContent = JSON.stringify(await r.json(), null, 2);
+}
+async function submitPacket(){
+  const pid = document.getElementById("pid").value;
+  const r = await fetch(API + "/packets/submit/" + encodeURIComponent(pid),{method:"POST"});
+  document.getElementById("packet_out").textContent = JSON.stringify(await r.json(), null, 2);
+}
+async function chat(){
+  const q = document.getElementById("chat_in").value;
+  const r = await fetch(API + "/chat/interpret",{method:"POST",headers:{'Content-Type':'application/json'},body:JSON.stringify({query:q})});
+  document.getElementById("chat_out").textContent = JSON.stringify(await r.json(), null, 2);
+}
+async function createActivity(){
+  const aid = document.getElementById("aid").value;
+  const payload = {activity_id: aid, archetype:"WORKLOAD_ONBOARDING", environment_profile:"STAGING"};
+  const r = await fetch(API + "/visibility/activities",{method:"POST",headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  document.getElementById("event_out").textContent = JSON.stringify(await r.json(), null, 2);
+}
+async function appendEvent(){
+  const aid = document.getElementById("aid").value;
+  const etype = document.getElementById("etype").value;
+  const msg = document.getElementById("emsg").value;
+  const payload = {event_id: "ev-"+Date.now(), activity_id: aid, event_type: etype, message: msg, prev_event_hash:"", artifact_refs:[]};
+  const r = await fetch(API + "/visibility/events",{method:"POST",headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  document.getElementById("event_out").textContent = JSON.stringify(await r.json(), null, 2);
+}
+</script>
+</body>
+</html>
